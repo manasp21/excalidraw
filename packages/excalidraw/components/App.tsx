@@ -8249,6 +8249,7 @@ class App extends React.Component<AppProps, AppState> {
           pointerCoords.x,
           pointerCoords.y,
           linearElementEditor,
+          (element) => this.getElementHitThreshold(element),
         );
         if (newState) {
           pointerDownState.lastCoords.x = pointerCoords.x;
