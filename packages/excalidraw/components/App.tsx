@@ -7818,7 +7818,8 @@ class App extends React.Component<AppProps, AppState> {
         true,
       );
 
-      if (hoveredElement) {
+      if (!isElbowArrow(element) && hoveredElement) {
+        // We're hijacking the start binding to transport the hovered start element
         mutateElement(element, this.scene.getNonDeletedElementsMap(), {
           startBinding: {
             elementId: hoveredElement.id,
@@ -8771,7 +8772,7 @@ class App extends React.Component<AppProps, AppState> {
               {
                 x: firstPointX,
                 y: firstPointY,
-                points: [points[0], pointFrom<LocalPoint>(dx, dy)],
+                points: [...points, pointFrom<LocalPoint>(dx, dy)],
               },
               { informMutation: false, isDragging: false },
             );
