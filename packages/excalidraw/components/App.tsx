@@ -7819,7 +7819,7 @@ class App extends React.Component<AppProps, AppState> {
         isElbowArrow(element),
       );
 
-      if (!isElbowArrow(element)) {
+      if (isSimpleArrow(element)) {
         this.setState((prevState) => {
           const linearElement = new LinearElementEditor(
             element,
@@ -7855,7 +7855,7 @@ class App extends React.Component<AppProps, AppState> {
       this.setState((prevState) => {
         let linearElementEditor = null;
         let nextSelectedElementIds = prevState.selectedElementIds;
-        if (!isElbowArrow(element)) {
+        if (isSimpleArrow(element)) {
           const linearElement = new LinearElementEditor(
             element,
             this.scene.getNonDeletedElementsMap(),
