@@ -647,6 +647,11 @@ class App extends React.Component<AppProps, AppState> {
   >();
   onRemoveEventListenersEmitter = new Emitter<[]>();
 
+  // setState(s: any, t: any) {
+  //   s.editingLinearElement && console.trace(s.editingLinearElement);
+  //   super.setState(s, t);
+  // }
+
   constructor(props: AppProps) {
     super(props);
     const defaultAppState = getDefaultAppState();
@@ -9285,10 +9290,7 @@ class App extends React.Component<AppProps, AppState> {
             newElement,
           });
         } else if (pointerDownState.drag.hasOccurred && !multiElement) {
-          if (
-            isBindingEnabled(this.state) &&
-            isBindingElement(newElement, false)
-          ) {
+          if (isBindingElement(newElement, false)) {
             this.actionManager.executeAction(actionFinalize, "ui", {
               event: childEvent,
               sceneCoords,
