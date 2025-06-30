@@ -5924,6 +5924,31 @@ class App extends React.Component<AppProps, AppState> {
         editingLinearElement?.lastUncommittedPoint != null ||
         this.state.newElement
       ) {
+        // Timed bind mode handler for arrow elements
+        if (this.state.bindMode === "focus") {
+          const hoveredElement = getHoveredElementForBinding(
+            scenePointer,
+            this.scene.getNonDeletedElements(),
+            this.scene.getNonDeletedElementsMap(),
+            this.state.zoom,
+          );
+
+          if (this.bindModeHandler && !hoveredElement) {
+            clearTimeout(this.bindModeHandler);
+            this.bindModeHandler = null;
+          } else if (!this.bindModeHandler && hoveredElement) {
+            this.bindModeHandler = setTimeout(() => {
+              if (hoveredElement) {
+                this.setState({
+                  bindMode: "fixed",
+                });
+              } else {
+                this.bindModeHandler = null;
+              }
+            }, BIND_MODE_TIMEOUT);
+          }
+        }
+
         this.maybeSuggestBindingAtCursor(
           scenePointer,
           editingLinearElement?.elbowed || false,
@@ -5944,7 +5969,6 @@ class App extends React.Component<AppProps, AppState> {
         this.setState({
           suggestedBindings: maybeSuggestBindingsForLinearElementAtCoords(
             newElement,
-            //[[{ x: newElement.x, y: newElement.y }, scenePointer]],
             "end",
             this.scene,
             this.state.zoom,
@@ -6731,6 +6755,17 @@ class App extends React.Component<AppProps, AppState> {
   ) => {
     this.removePointer(event);
     this.lastPointerUpEvent = event;
+
+    // Cancel any pending timeout for bind mode change
+    if (this.state.bindMode === "fixed") {
+      if (this.bindModeHandler) {
+        clearTimeout(this.bindModeHandler);
+      }
+      this.bindModeHandler = null;
+      this.setState({
+        bindMode: "focus",
+      });
+    }
 
     const scenePointer = viewportCoordsToSceneCoords(
       { clientX: event.clientX, clientY: event.clientY },
@@ -8365,29 +8400,27 @@ class App extends React.Component<AppProps, AppState> {
 
         // Timed bind mode handler for arrow elements
         if (this.state.bindMode === "focus") {
-          const pointerMovementDistance = Math.hypot(
-            (this.lastPointerMoveCoords?.x ?? Infinity) - pointerCoords.x,
-            (this.lastPointerMoveCoords?.y ?? Infinity) - pointerCoords.y,
+          const hoveredElement = getHoveredElementForBinding(
+            pointerCoords,
+            this.scene.getNonDeletedElements(),
+            elementsMap,
+            this.state.zoom,
           );
-          if (this.bindModeHandler && pointerMovementDistance < 1) {
-            clearTimeout(this.bindModeHandler);
-          }
-          this.bindModeHandler = setTimeout(() => {
-            const hoveredElement = getHoveredElementForBinding(
-              pointerCoords,
-              this.scene.getNonDeletedElements(),
-              elementsMap,
-              this.state.zoom,
-            );
 
-            if (hoveredElement) {
-              this.setState({
-                bindMode: "fixed",
-              });
-            } else {
-              this.bindModeHandler = null;
-            }
-          }, BIND_MODE_TIMEOUT);
+          if (this.bindModeHandler && !hoveredElement) {
+            clearTimeout(this.bindModeHandler);
+            this.bindModeHandler = null;
+          } else if (!this.bindModeHandler && hoveredElement) {
+            this.bindModeHandler = setTimeout(() => {
+              if (hoveredElement) {
+                this.setState({
+                  bindMode: "fixed",
+                });
+              } else {
+                this.bindModeHandler = null;
+              }
+            }, BIND_MODE_TIMEOUT);
+          }
         }
 
         const newState = LinearElementEditor.handlePointDragging(
@@ -8874,15 +8907,18 @@ class App extends React.Component<AppProps, AppState> {
               hoveredElement?.id === startBindingElement.id;
 
             if (!arrowIsInsideTheSameElement) {
-              const [outlinePointX, outlinePointY] = getOutlineAvoidingPoint(
-                newElement,
-                hoveredElement,
-                hoveredElement
-                  ? pointFrom(pointerCoords.x, pointerCoords.y)
-                  : pointFrom(gridX, gridY),
-                newElement.points.length - 1,
-                elementsMap,
-              );
+              const [targetPointX, targetPointY] =
+                this.state.bindMode === "focus"
+                  ? getOutlineAvoidingPoint(
+                      newElement,
+                      hoveredElement,
+                      hoveredElement
+                        ? pointFrom(pointerCoords.x, pointerCoords.y)
+                        : pointFrom(gridX, gridY),
+                      newElement.points.length - 1,
+                      elementsMap,
+                    )
+                  : pointFrom(gridX, gridY);
 
               const otherHoveredElement = getHoveredElementForBinding(
                 { x: firstPointX, y: firstPointY },
@@ -8900,8 +8936,8 @@ class App extends React.Component<AppProps, AppState> {
                 elementsMap,
               );
 
-              dx = outlinePointX - firstPointX;
-              dy = outlinePointY - firstPointY;
+              dx = targetPointX - firstPointX;
+              dy = targetPointY - firstPointY;
             } else {
               firstPointX =
                 this.state.editingLinearElement?.pointerDownState
@@ -8955,7 +8991,6 @@ class App extends React.Component<AppProps, AppState> {
             this.setState({
               suggestedBindings: maybeSuggestBindingsForLinearElementAtCoords(
                 newElement,
-                //[[{ x: newElement.x, y: newElement.y }, pointerCoords]],
                 "end",
                 this.scene,
                 this.state.zoom,
