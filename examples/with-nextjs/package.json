@@ -12,7 +12,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.1",
+    "esbuild": "0.25.5",
+    "next": "14.2.30",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
